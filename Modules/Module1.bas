@@ -19,7 +19,6 @@ Sub CopyColumnInsertRight()
     Application.CutCopyMode = False
     
     ActiveSheet.UsedRange
-    
 End Sub
 
 Sub NewRow(inInputMessage)
@@ -170,7 +169,7 @@ Sub listButtons()
     
     For Each LCurrentShape In LCurrentWorksheet.Shapes
     If LCurrentShape.Type = 8 Then
-        Debug.Print "Name: " & LCurrentShape.Name
+        Debug.Print "Name: " & LCurrentShape.name
         Debug.Print "Row: " & LCurrentShape.TopLeftCell.Row
         Debug.Print "Type: " & LCurrentShape.Type
         Debug.Print "Connector: " & LCurrentShape.ID
