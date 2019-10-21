@@ -1,7 +1,7 @@
 Attribute VB_Name = "Module1"
 Option Explicit
 
-Function findCell(inWorksheet As Worksheet, inValue As Variant) As Range
+Private Function findCell(inWorksheet As Worksheet, inValue As Variant) As Range
     ' Returns range object of first cell with value = inValue
     Dim lCurrentCell
     
