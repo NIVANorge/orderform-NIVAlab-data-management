@@ -63,7 +63,7 @@ Sub hideUncheckedAnalyses()
     lStartColumn = lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Ønskede analyser listes nedenfor").Column + 1
     
     
-    lLastRow = LCurrentWorksheet.UsedRange.Rows.Count - 1
+    lLastRow = LCurrentWorksheet.UsedRange.Rows.Count - 2
     lLastColumn = LCurrentWorksheet.UsedRange.Columns.Count
     
     'Loop through all rows with analysismethods
@@ -387,12 +387,14 @@ Sub resizeAlignButtons()
     Dim lCellWidth As Integer
     Dim lCellLeft As Integer
     
+    ActiveSheet.UsedRange
     Set LCurrentWorksheet = ActiveSheet
     
     For Each lCurrentShape In LCurrentWorksheet.Shapes
         If lCurrentShape.Type = msoFormControl Then
-          If lCurrentShape.FormControlType <> xlDropDown Then
+                     Debug.Print (lCurrentShape.Type & ", " & lCurrentShape.name & ", " & lCurrentShape.TopLeftCell.Row & ", " & lCurrentShape.BottomRightCell.Row)
               
+          If lCurrentShape.FormControlType = xlCheckBox Or lCurrentShape.FormControlType = xlButtonControl Then
   
               lTopRow = lCurrentShape.TopLeftCell.Row
               lBottomRow = lCurrentShape.BottomRightCell.Row
@@ -444,11 +446,12 @@ Sub resizeRightAlignButtons()
     Dim lCellWidth As Integer
     Dim lCellLeft As Integer
     
+    ActiveSheet.UsedRange
     Set LCurrentWorksheet = ActiveSheet
     
     For Each lCurrentShape In LCurrentWorksheet.Shapes
         If lCurrentShape.Type = msoFormControl Then
-          If lCurrentShape.FormControlType <> xlDropDown Then
+          If lCurrentShape.FormControlType = xlCheckBox Or lCurrentShape.FormControlType = xlButtonControl Then
               lTopRow = lCurrentShape.TopLeftCell.Row
               lBottomRow = lCurrentShape.BottomRightCell.Row
               lLeftCol = lCurrentShape.TopLeftCell.Column
