@@ -1,8 +1,10 @@
 Attribute VB_Name = "Module1"
 Option Explicit
 
+
 Private Function findCell(inWorksheet As Worksheet, inValue As Variant) As Range
-    ' Returns range object of first cell with value = inValue
+    ' Returns range of first cell with value = inValue
+    
     Dim lCurrentCell
     
     For Each lCurrentCell In inWorksheet.UsedRange.Cells
@@ -98,7 +100,7 @@ Sub hideUncheckedAnalyses()
 End Sub
 
 
-Private Function isChecked(inWorksheet As Worksheet, inRow As Integer, inColumn As Integer)
+Function isChecked(inWorksheet As Worksheet, inRow As Integer, inColumn As Integer)
 
     Dim lCurrentShape As Shape
     Dim lTopRow As Integer
@@ -138,8 +140,6 @@ Private Function isChecked(inWorksheet As Worksheet, inRow As Integer, inColumn 
         End If
         
     Next lCurrentShape
-    
-    isChecked = xlOff
     
 End Function
 
@@ -200,7 +200,9 @@ Sub CopyColumnInsertRight()
     
 End Sub
 
-Sub NewRow(inInputMessage)
+
+Private Sub NewRow(inInputMessage)
+    
     Dim lShape As Shape
     Dim lRow As Integer
     Dim lNewRow As Integer
@@ -309,62 +311,77 @@ Sub NewAnalys()
     
     Set lNewDataCell = Cells(lNewRow, lNewColumn)
     
-    'Copy validation to new cell from cell above
+    'Copy validation to new row from row above
     Range(Cells(lRow, 1), Cells(lRow, lNewColumn)).Copy
-    lNewDataCell.Select
+    Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
     Selection.PasteSpecial Paste:=xlPasteValidation, Operation:=xlNone, _
         SkipBlanks:=False, Transpose:=False
     
-    'Copy format to new row from cell above
-    Range(Cells(lNewRow, 1), lNewDataCell).Select
+    'Copy format to new row from row above
+    Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
     Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
         SkipBlanks:=False, Transpose:=False
     
     Application.CutCopyMode = False
+           
+    ' Insert check boxes for entire new row
+    createCheckBoxes Range(Cells(lNewRow, 2), Cells(lNewRow, lNewColumn))
     
-    'Change inputMessage
-    Cells(lNewRow, 1).Validation.InputMessage = "Her kan du legge inn ytterligere analyse" _
-        & " hvis øvrig informasjon er felles med analysen over."
-    
-    'Create check-box
+    ' Move New Analysis button down
     lCellHeight = lNewDataCell.Height
-    lCellTop = lNewDataCell.Top
     lShape.Height = lCellHeight * 0.9
     lShape.Top = lNewDataCell.Top + 0.05 * lCellHeight
-    lCheckboxWidth = 24
-    lCheckboxLeft = lNewDataCell.Left + (lNewDataCell.Offset.Width - lCheckboxWidth) / 2
-    lCheckboxHeight = 20
-    lCheckboxTop = lNewDataCell.Top + (lNewDataCell.Height - lCheckboxHeight) / 2
-    ActiveSheet.CheckBoxes.Add(lCheckboxLeft, lCheckboxTop, lCheckboxWidth, lCheckboxHeight).Select
-    Selection.Characters.Text = ""
-    Selection.Value = True
     
-    Cells(lNewDataCell.Row, 1).Select
+    lNewDataCell.Select
     
     Application.CutCopyMode = False
     ActiveSheet.UsedRange
   
 End Sub
 
-Sub listButtons()
 
-    Dim LCurrentWorksheet As Worksheet
-    Dim lCurrentShape As Shape
+Private Sub createCheckbox(inCell As Range)
+    'Create check-box in cell and check it
     
-    Set LCurrentWorksheet = ActiveSheet
+    Dim lShape As Shape
+    Dim lRow As Integer
+    Dim lNewRow As Integer
+    Dim lCellHeight As Integer
+    Dim lCellTop As Integer
+    Dim lCheckboxLeft As Integer
+    Dim lCheckboxTop As Integer
+    Dim lCheckboxWidth As Integer
+    Dim lCheckboxHeight As Integer
+
+    lCellHeight = inCell.Height
+    lCellTop = inCell.Top
+    lCheckboxWidth = 24
+    lCheckboxLeft = inCell.Left + (inCell.Offset.Width - lCheckboxWidth) / 2
+    lCheckboxHeight = 20
+    lCheckboxTop = inCell.Top + (inCell.Height - lCheckboxHeight) / 2
     
-    For Each lCurrentShape In LCurrentWorksheet.Shapes
-    If lCurrentShape.Type = msoFormControl Then
-        Debug.Print "Name: " & lCurrentShape.name
-        Debug.Print "Row: " & lCurrentShape.TopLeftCell.Row
-        Debug.Print "Type: " & lCurrentShape.Type
-        Debug.Print "Connector: " & lCurrentShape.ID
-        Debug.Print "ID: " & lCurrentShape.ID
-        Debug.Print "Alternative text: " & lCurrentShape.AlternativeText
-        
-        End If
+    ' Check if checkbox already exists
+    If Not isChecked(inCell.Worksheet, inCell.Row, inCell.Column) = vbEmpty Then
+        Exit Sub
+    End If
     
-    Next lCurrentShape
+    ' Create check box
+    ActiveSheet.CheckBoxes.Add(lCheckboxLeft, lCheckboxTop, lCheckboxWidth, lCheckboxHeight).Select
+    
+    Selection.Characters.Text = ""
+    
+    ' Precheck chekbox
+    Selection.Value = True
+End Sub
+
+
+Private Sub createCheckBoxes(inRow As Range)
+    
+    Dim lCurrentCell As Range
+    
+    For Each lCurrentCell In inRow
+        createCheckbox lCurrentCell
+    Next
 
 End Sub
 
@@ -491,6 +508,10 @@ End Function
 Public Function getValidationInputMessage(inCell As Range)
     getValidationInputMessage = inCell.Validation.InputMessage
 End Function
+
+
+
+
 
 
 
