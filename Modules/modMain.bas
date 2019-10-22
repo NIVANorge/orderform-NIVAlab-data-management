@@ -1,4 +1,4 @@
-Attribute VB_Name = "Module1"
+Attribute VB_Name = "modMain"
 Option Explicit
 
 
@@ -18,13 +18,13 @@ End Function
 
 Sub unhideAllRowsAndFormControls()
     
-    Dim LCurrentWorksheet As Worksheet
+    Dim lCurrentWorksheet As Worksheet
     Dim lCurrentShape As Shape
     
     Application.ScreenUpdating = False
     ActiveSheet.UsedRange
     
-    Set LCurrentWorksheet = ActiveSheet
+    Set lCurrentWorksheet = ActiveSheet
     
     ' Unhide all rows
     Cells.Select
@@ -33,7 +33,7 @@ Sub unhideAllRowsAndFormControls()
     Range("A1").Select
     
     ' Unhide form controls
-    For Each lCurrentShape In LCurrentWorksheet.Shapes
+    For Each lCurrentShape In lCurrentWorksheet.Shapes
       
       lCurrentShape.Visible = msoTrue
     
@@ -46,7 +46,7 @@ End Sub
 
 Sub hideUncheckedAnalyses()
     
-    Dim LCurrentWorksheet As Worksheet
+    Dim lCurrentWorksheet As Worksheet
     Dim lCurrentShape As Shape
     Dim lStartRow As Integer
     Dim lCurrentRow As Integer
@@ -59,14 +59,15 @@ Sub hideUncheckedAnalyses()
     Application.ScreenUpdating = False
     ActiveSheet.UsedRange
     
-    Set LCurrentWorksheet = ActiveSheet
-    
-    lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Ønskede analyser listes nedenfor").Row + 1
-    lStartColumn = lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Ønskede analyser listes nedenfor").Column + 1
+    Set lCurrentWorksheet = ActiveSheet
     
     
-    lLastRow = LCurrentWorksheet.UsedRange.Rows.Count - 2
-    lLastColumn = LCurrentWorksheet.UsedRange.Columns.Count
+    lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Analyser:").Row + 1
+    lStartColumn = lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Analyser:").Column + 1
+    
+    
+    lLastRow = lCurrentWorksheet.UsedRange.Rows.Count - 2
+    lLastColumn = lCurrentWorksheet.UsedRange.Columns.Count
     
     'Loop through all rows with analysismethods
     For lCurrentRow = lStartRow To lLastRow
@@ -78,7 +79,7 @@ Sub hideUncheckedAnalyses()
         
         For lCurrentColumn = lStartColumn To lLastColumn + 1
         
-            If isChecked(LCurrentWorksheet, lCurrentRow, lCurrentColumn) = xlOn Then
+            If isChecked(lCurrentWorksheet, lCurrentRow, lCurrentColumn) = xlOn Then
                 lHideRow = False
                 Exit For
             End If
@@ -87,7 +88,7 @@ Sub hideUncheckedAnalyses()
         
         If lHideRow = True Then
             ' Hide checkboxes, they are not hidden with the row, when the row is hidden
-            hideCheckBoxesInRow LCurrentWorksheet, lCurrentRow
+            hideCheckBoxesInRow lCurrentWorksheet, lCurrentRow
             
             ' Hide entire cell row
             Cells(lCurrentRow, lCurrentColumn).EntireRow.Hidden = True
@@ -201,7 +202,7 @@ Sub CopyColumnInsertRight()
 End Sub
 
 
-Private Sub NewRow(inInputMessage)
+Private Sub NewRow(inCellContainingValidation As Range)
     
     Dim lShape As Shape
     Dim lRow As Integer
@@ -212,9 +213,6 @@ Private Sub NewRow(inInputMessage)
     Dim lCellTop As Integer
     Dim lNewDataCell As Range
     
-    'Empty clipboard
-    Application.CutCopyMode = False
-
     'Find position of button pressed and destination cells
     Set lShape = ActiveSheet.Shapes(Application.Caller)
     lRow = lShape.TopLeftCell.Row
@@ -231,55 +229,71 @@ Private Sub NewRow(inInputMessage)
     lCellTop = lNewDataCell.Top
     lShape.Height = lCellHeight * 0.9
     lShape.Top = lNewDataCell.Top + 0.05 * lCellHeight
-
-    'Copy validation to new cell from cell above
-    Cells(lRow, lNewColumn).Copy
-    lNewDataCell.Select
-    Selection.PasteSpecial Paste:=xlPasteValidation, Operation:=xlNone, _
-        SkipBlanks:=False, Transpose:=False
-    Application.CutCopyMode = False
     
-    'Change inputMessage
-    lNewDataCell.Validation.InputMessage = inInputMessage
+    'Copy Data Validation from DataValidations sheet
+    inCellContainingValidation.Copy
+    
+    lNewDataCell.Select
+    
+    Selection.PasteSpecial Paste:=xlPasteValidation
     
     ActiveSheet.UsedRange
 End Sub
 
+
 Sub NewStationRow()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere en stasjon hvis øvrig" _
-        & " informasjon er felles med stasjonen(e) over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Stasjonskode og navn").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
+
 
 Sub NewDate()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere en prøvetakingsdato" _
-        & " hvis øvrig informasjon er felles med datoen over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdato").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
+
 
 Sub NewDepth()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere et prøvetakingsdyp" _
-    & " eller intervall hvis øvrig informasjon er felles med dypet over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdyp").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
+
 
 Sub NewCore()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere en kjerne" _
-    & " hvis øvrig informasjon er felles med kjernen over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Kjerneidentifikasjon/grabb").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
+
 
 Sub NewSlice()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere et snitt" _
-    & " hvis øvrig informasjon er felles med snittet over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Snitt").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
 
+
 Sub NewSpecimen()
-    Const cInputMessage As String = "Her kan du legge inn ytterligere et individ" _
-    & " hvis øvrig informasjon er felles med individet over."
-    Call NewRow(cInputMessage)
+    Dim lCellCopyValidation As Range
+    
+    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Individnummer/prøvenr").Offset(columnoffset:=1)
+
+    Call NewRow(lCellCopyValidation)
 End Sub
+
 
 Sub NewAnalys()
     Dim lShape As Shape
@@ -341,7 +355,8 @@ End Sub
 
 
 Private Sub createCheckbox(inCell As Range)
-    'Create check-box in cell and check it
+    ' Create check-box in cell and check it
+    ' Used when creating new row in anaylses sheets
     
     Dim lShape As Shape
     Dim lRow As Integer
@@ -376,7 +391,7 @@ End Sub
 
 
 Private Sub createCheckBoxes(inRow As Range)
-    
+    ' Used when creating new row in anaylses sheets
     Dim lCurrentCell As Range
     
     For Each lCurrentCell In inRow
@@ -384,135 +399,4 @@ Private Sub createCheckBoxes(inRow As Range)
     Next
 
 End Sub
-
-
-Sub resizeAlignButtons()
-'Brukes for å midtstille form controls i cellene, og lage størrelsen 80% av cellen de er i
-'Brukes kun i tomme ark uten ekstra-kolonner
-
-    Dim LCurrentWorksheet As Worksheet
-    Dim lCurrentShape As Shape
-    Dim lCellHeight As Integer
-    Dim lCellTop As Integer
-    Dim lCell As Range
-    Dim lTopRow As Integer
-    Dim lLeftCol As Integer
-    Dim lBottomRow As Integer
-    Dim lRightCol As Integer
-    Dim lCol As Integer
-    Dim lRow As Integer
-    Dim lCellWidth As Integer
-    Dim lCellLeft As Integer
-    
-    ActiveSheet.UsedRange
-    Set LCurrentWorksheet = ActiveSheet
-    
-    For Each lCurrentShape In LCurrentWorksheet.Shapes
-        If lCurrentShape.Type = msoFormControl Then
-                     Debug.Print (lCurrentShape.Type & ", " & lCurrentShape.name & ", " & lCurrentShape.TopLeftCell.Row & ", " & lCurrentShape.BottomRightCell.Row)
-              
-          If lCurrentShape.FormControlType = xlCheckBox Or lCurrentShape.FormControlType = xlButtonControl Then
-  
-              lTopRow = lCurrentShape.TopLeftCell.Row
-              lBottomRow = lCurrentShape.BottomRightCell.Row
-              lLeftCol = lCurrentShape.TopLeftCell.Column
-              lRightCol = lCurrentShape.BottomRightCell.Column
-              
-              lCol = (lLeftCol + lRightCol) \ 2
-              lRow = (lTopRow + lBottomRow) \ 2
-              
-              Set lCell = Cells(lRow, lCol)
-              
-              lCellLeft = lCell.Left
-              lCellWidth = lCell.Width
-              lCellTop = lCell.Top
-              lCellHeight = lCell.Height
-              
-              If lCurrentShape.FormControlType = xlButtonControl Then
-                  lCurrentShape.Height = lCellHeight * 0.8
-                  lCurrentShape.Width = lCellWidth * 0.8
-              End If
-              
-              lCurrentShape.Top = lCellTop + (lCellHeight - lCurrentShape.Height) / 2
-              lCurrentShape.Left = lCellLeft + (lCellWidth - lCurrentShape.Width) / 2
-              
-             'Debug.Print (lCurrentShape.Type & ", " & lCurrentShape.name & ", " & lCurrentShape.TopLeftCell.Row & ", " & lCurrentShape.BottomRightCell.Row)
-              
-          End If
-        End If
-    Next lCurrentShape
-
-End Sub
-
-
-Sub resizeRightAlignButtons()
-'Brukes for å midtstille fom controls i cellene, og lage størrelsen 80% av cellen de er i
-'Brukes i prosjektinfo-arket
-
-    Dim LCurrentWorksheet As Worksheet
-    Dim lCurrentShape As Shape
-    Dim lCellHeight As Integer
-    Dim lCellTop As Integer
-    Dim lCell As Range
-    Dim lTopRow As Integer
-    Dim lLeftCol As Integer
-    Dim lBottomRow As Integer
-    Dim lRightCol As Integer
-    Dim lCol As Integer
-    Dim lRow As Integer
-    Dim lCellWidth As Integer
-    Dim lCellLeft As Integer
-    
-    ActiveSheet.UsedRange
-    Set LCurrentWorksheet = ActiveSheet
-    
-    For Each lCurrentShape In LCurrentWorksheet.Shapes
-        If lCurrentShape.Type = msoFormControl Then
-          If lCurrentShape.FormControlType = xlCheckBox Or lCurrentShape.FormControlType = xlButtonControl Then
-              lTopRow = lCurrentShape.TopLeftCell.Row
-              lBottomRow = lCurrentShape.BottomRightCell.Row
-              lLeftCol = lCurrentShape.TopLeftCell.Column
-              lRightCol = lCurrentShape.BottomRightCell.Column
-              
-              lCol = (lLeftCol + lRightCol) \ 2
-              lRow = (lTopRow + lBottomRow) \ 2
-              
-              Set lCell = Cells(lRow, lCol)
-              
-              lCellLeft = lCell.Left
-              lCellWidth = lCell.Width
-              lCellTop = lCell.Top
-              lCellHeight = lCell.Height
-              
-              If lCurrentShape.FormControlType = xlButtonControl Then
-                  lCurrentShape.Height = lCellHeight * 0.8
-                  lCurrentShape.Width = lCellWidth * 0.8
-              End If
-              
-              lCurrentShape.Top = lCellTop + (lCellHeight - lCurrentShape.Height) / 2
-              'LCurrentShape.Left = lCellLeft + (lCellWidth - LCurrentShape.Width) / 2
-              lCurrentShape.Left = lCellLeft + lCellWidth * 0.9 - lCurrentShape.Width / 2
-              
-          End If
-        End If
-    Next lCurrentShape
-
-End Sub
-
-
-Public Function getValidationErrorMessage(inCell As Range) As String
-    getValidationErrorMessage = inCell.Validation.ErrorMessage
-End Function
-
-
-Public Function getValidationInputMessage(inCell As Range)
-    getValidationInputMessage = inCell.Validation.InputMessage
-End Function
-
-
-
-
-
-
-
 
