@@ -10,8 +10,9 @@ Private Sub protect_wb_and_ws()
     For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
     
         lCurrentWorksheet.Protect "encrypted", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
-        lCurrentWorksheet.EnableSelection = xlUnlockedCells
-    
+        'lCurrentWorksheet.EnableSelection = xlUnlockedCells
+        lCurrentWorksheet.EnableSelection = xlNoRestrictions
+        
     Next lCurrentWorksheet
     
     ActiveWorkbook.Protect "encrypted"
