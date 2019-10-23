@@ -30,13 +30,15 @@ End Function
 Private Function CreateModules()
     Dim modules As New Collection
     For Each component In ThisWorkbook.VBProject.VBComponents
-        If Not (component.name = "SourceCode" Or Left(component.name, 9) = "Installer") Then
+        'If Not (component.name = "SourceCode" Or Left(component.name, 9) = "Installer") Then
             If component.Type = 1 Then
                 modules.Add CreateModule(component.name)
             ElseIf component.Type = 2 Then
                 modules.Add CreateClassModule(component.name)
+            ElseIf component.Type = 100 Then
+                modules.Add CreateWorksheetModule(component.name)
             End If
-        End If
+       ' End If
     Next
     Set CreateModules = modules
 End Function
@@ -50,11 +52,27 @@ Private Function CreateModule(name As String)
 End Function
 
 Private Function CreateClassModule(name As String)
+    
     Dim module As New InstallerModule
+    
     module.name = name
+    
     module.Path = "Class Modules/" & name & ".cls"
 
     Set CreateClassModule = module
+
+End Function
+
+Private Function CreateWorksheetModule(name As String)
+    
+    Dim module As New InstallerModule
+    
+    module.name = name
+    
+    module.Path = "Microsoft Excel Objects/" & name & ".cls"
+
+    Set CreateWorksheetModule = module
+
 End Function
 
 
