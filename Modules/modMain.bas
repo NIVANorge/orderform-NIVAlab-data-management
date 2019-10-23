@@ -400,3 +400,31 @@ Private Sub createCheckBoxes(inRow As Range)
 
 End Sub
 
+
+Sub resetProtection()
+    ' Procedure for resetting protection
+    ' Protection is reset for Worksheets and Workbook structure
+    ' It can sometimes be necessary to set the right protection level, because it seems like
+    ' "UserInterfaceOnly:=True" will not persist after reopening the worksheet (property
+    '   activesheet.protectionMode = True)
+    
+    Dim lCurrentWorksheet As Worksheet
+    
+    If ActiveWorkbook.ProtectStructure <> True Then
+        ActiveWorkbook.Protect Password:="encrypted"
+    End If
+    
+    For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
+    
+        If lCurrentWorksheet.ProtectionMode = False Then
+            lCurrentWorksheet.Protect Password:="encrypted", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
+        End If
+        
+        If lCurrentWorksheet.EnableSelection <> xlNoRestrictions Then
+            lCurrentWorksheet.EnableSelection = xlNoRestrictions
+        End If
+    
+    Next lCurrentWorksheet
+    
+End Sub
+
