@@ -3,428 +3,523 @@ Option Explicit
 
 
 Private Function findCell(inWorksheet As Worksheet, inValue As Variant) As Range
-    ' Returns range of first cell with value = inValue
-    
-    Dim lCurrentCell
-    
-    For Each lCurrentCell In inWorksheet.UsedRange.Cells
-        If lCurrentCell.Value = inValue Then
-            Set findCell = lCurrentCell
-            Exit Function
-        End If
-    Next
+  ' Returns range of first cell with value = inValue in inWorksheet
+  
+  Dim lCurrCell
+  
+  For Each lCurrCell In inWorksheet.UsedRange.Cells
+      
+    If lCurrCell.Value = inValue Then
+        
+      Set findCell = lCurrCell
+      
+      Exit Function
+      
+    End If
+  
+  Next
+  
 End Function
 
 
 Sub unhideAllRowsAndFormControls()
+  ' This procedure shows all rows, checkboxes and other shapes
+  ' when pressing "Vis alle" in Analyser-section of active
+  ' worksheet
+  
+  Dim lCurrSheet As Worksheet
+  Dim lCurrShape As Shape
+  Dim initialScreenUpdating As Boolean
+  
+  initialScreenUpdating = Application.ScreenUpdating
+  
+  Application.ScreenUpdating = False
+  
+  ' Reset protection
+  protect_wb_and_ws
+  
+  ActiveSheet.UsedRange
+  
+  Set lCurrSheet = ActiveSheet
+  
+  ' Unhide all rows
+  Cells.Select
+  Selection.EntireRow.Hidden = False
+  
+  lCurrSheet.Range("B2").Select
+  
+  ' Unhide form controls
+  For Each lCurrShape In lCurrSheet.Shapes
     
-    Dim lCurrentWorksheet As Worksheet
-    Dim lCurrentShape As Shape
-    
-    Application.ScreenUpdating = False
-    ActiveSheet.UsedRange
-    
-    Set lCurrentWorksheet = ActiveSheet
-    
-    ' Unhide all rows
-    Cells.Select
-    Selection.EntireRow.Hidden = False
-    
-    Range("A1").Select
-    
-    ' Unhide form controls
-    For Each lCurrentShape In lCurrentWorksheet.Shapes
-      
-      lCurrentShape.Visible = msoTrue
-    
-    Next lCurrentShape
-    
-  Application.ScreenUpdating = True
+    lCurrShape.Visible = msoTrue
+  
+  Next lCurrShape
+  
+  ActiveSheet.GroupObjects("OptionButtonsShowAllVsSelected").ShapeRange.GroupItems("optnBtnShowAll").ControlFormat.Value = xlOn
+  
+  Application.ScreenUpdating = initialScreenUpdating
   
 End Sub
 
 
 Sub hideUncheckedAnalyses()
+    ' This procedure hides all rows and corresponding checkboxes
+    ' when pressing "Vis kun avkryssede" in Analyser-section of active
+    ' worksheet.
     
-    Dim lCurrentWorksheet As Worksheet
-    Dim lCurrentShape As Shape
+    Dim lCurrSheet As Worksheet
     Dim lStartRow As Integer
-    Dim lCurrentRow As Integer
-    Dim lCurrentColumn As Integer
+    Dim lCurrRow As Integer
+    Dim lCurrColumn As Integer
     Dim lStartColumn As Integer
-    Dim lLastRow
-    Dim lLastColumn
+    Dim lLastRow As Integer
+    Dim lLastColumn As Integer
     Dim lHideRow As Boolean
+    Dim lCurrCell As Range
+    
+    Dim initialScreenUpdating As Boolean
+  
+    initialScreenUpdating = Application.ScreenUpdating
     
     Application.ScreenUpdating = False
+    
+    ' Reset protection
+    protect_wb_and_ws
+    
     ActiveSheet.UsedRange
     
-    Set lCurrentWorksheet = ActiveSheet
+    Set lCurrSheet = ActiveSheet
     
+    ' Find "Analyser"-cell, only the rows beneath are going to be hidden
+    lStartRow = findCell(ActiveSheet, "Analyser:").Row + 1
+    lStartColumn = findCell(ActiveSheet, "Analyser:").Column + 1
     
-    lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Analyser:").Row + 1
-    lStartColumn = lStartRow = findCell(Worksheets("Analyserekvisisjon ferskvann"), "Analyser:").Column + 1
-    
-    
-    lLastRow = lCurrentWorksheet.UsedRange.Rows.Count - 2
-    lLastColumn = lCurrentWorksheet.UsedRange.Columns.Count
+    lLastRow = lCurrSheet.UsedRange.Rows.Count - 2
+    lLastColumn = lCurrSheet.UsedRange.Columns.Count
     
     'Loop through all rows with analysismethods
-    For lCurrentRow = lStartRow To lLastRow
+    For lCurrRow = lStartRow To lLastRow
     
         ' Loop through all cells/columns in each row. If one or more analyses are checked,
-        ' the row should not get hidden
+        ' the row should not become hidden
         
         lHideRow = True
         
-        For lCurrentColumn = lStartColumn To lLastColumn + 1
+        For lCurrColumn = lStartColumn To lLastColumn
         
-            If isChecked(lCurrentWorksheet, lCurrentRow, lCurrentColumn) = xlOn Then
-                lHideRow = False
-                Exit For
-            End If
-            
-        Next lCurrentColumn
+          Set lCurrCell = lCurrSheet.Cells(lCurrRow, lCurrColumn)
+    
+          If lCurrCell = True Then
+          
+            lHideRow = False
+      
+            Exit For
+          
+          End If
+                        
+        Next lCurrColumn
         
-        If lHideRow = True Then
+        If lHideRow Then
             ' Hide checkboxes, they are not hidden with the row, when the row is hidden
-            hideCheckBoxesInRow lCurrentWorksheet, lCurrentRow
+            hideCheckBoxesInRow lCurrSheet, lCurrRow
             
             ' Hide entire cell row
-            Cells(lCurrentRow, lCurrentColumn).EntireRow.Hidden = True
+            Cells(lCurrRow, lCurrColumn).EntireRow.Hidden = True
         End If
         
-    Next lCurrentRow
+    Next lCurrRow
     
-  Application.ScreenUpdating = True
+    ActiveSheet.GroupObjects("OptionButtonsShowAllVsSelected").ShapeRange.GroupItems("optnBtnShowCheckedOnly").ControlFormat.Value = xlOn
+    
+  Application.ScreenUpdating = initialScreenUpdating
   
 End Sub
 
 
-Function isChecked(inWorksheet As Worksheet, inRow As Integer, inColumn As Integer)
+Private Function linkedCheckBoxExists(inWorksheet As Worksheet, inAddress As String) As Boolean
 
-    Dim lCurrentShape As Shape
-    Dim lTopRow As Integer
-    Dim lLeftCol As Integer
-    Dim lBottomRow As Integer
-    Dim lRightCol As Integer
-    Dim lCol As Integer
-    Dim lRow As Integer
+  Dim lCurrCheckBox As CheckBox
 
-    For Each lCurrentShape In inWorksheet.Shapes
+  For Each lCurrCheckBox In inWorksheet.CheckBoxes
 
-        If lCurrentShape.Type = msoFormControl Then
-            
-            If lCurrentShape.FormControlType = xlCheckBox Then
-            
-              ' Find position of current checkbox
-              lTopRow = lCurrentShape.TopLeftCell.Row
-              lBottomRow = lCurrentShape.BottomRightCell.Row
-              lLeftCol = lCurrentShape.TopLeftCell.Column
-              lRightCol = lCurrentShape.BottomRightCell.Column
-              
-              ' Find middle reference of checkbox
-              lCol = (lLeftCol + lRightCol) \ 2
-              lRow = (lTopRow + lBottomRow) \ 2
-              
-              ' Test if current checkbox has same reference as input
-              If lRow = inRow And lCol = inColumn Then
-                
-                isChecked = lCurrentShape.ControlFormat.Value
-                
-                Exit Function
-                
-              End If
-              
-            End If
-            
-        End If
-        
-    Next lCurrentShape
+    If lCurrCheckBox.LinkedCell = inAddress Then
+      
+      linkedCheckBoxExists = True
+      
+      Exit Function
     
+    End If
+
+  Next lCurrCheckBox
+  
+  linkedCheckBoxExists = False
+  
 End Function
 
 
 Private Sub hideCheckBoxesInRow(inWorksheet As Worksheet, inRow As Integer)
     
-    Dim lCurrentShape As Shape
-    Dim lTopRow As Integer
-    Dim lBottomRow As Integer
-    Dim lRightCol As Integer
-    Dim lRow As Integer
+  Dim lCurrCheckBox As CheckBox
+  Dim lCurrCheckBoxRow As Integer
 
-    For Each lCurrentShape In inWorksheet.Shapes
+  For Each lCurrCheckBox In inWorksheet.CheckBoxes
+    lCurrCheckBoxRow = Split(lCurrCheckBox.LinkedCell, "$")(2)
 
-        If lCurrentShape.Type = msoFormControl Then
-            
-            If lCurrentShape.FormControlType = xlCheckBox Then
-              
-              ' Find reference for center of current checkbox
-              lTopRow = lCurrentShape.TopLeftCell.Row
-              lBottomRow = lCurrentShape.BottomRightCell.Row
+    If lCurrCheckBoxRow = inRow Then
+      
+      lCurrCheckBox.Visible = False
 
-              lRow = (lTopRow + lBottomRow) \ 2
-              
-              If lRow = inRow Then
-                
-                lCurrentShape.Visible = msoFalse
-          
-              End If
-              
-            End If
-        
-        End If
-    
-    Next lCurrentShape
-    
+    End If
+               
+  Next lCurrCheckBox
+ 
 End Sub
 
 
-Sub CopyColumnInsertRight()
+Sub newAnalysColumn()
 
-    Dim lString As String
+  Dim lFromCol As Range
+  Dim lFromCheckBox As CheckBox
+  Dim lNewCheckBox As CheckBox
+  Dim lCopyButton As Shape
+  Dim lFromColNo As Integer
+  Dim lNewColNo As Integer
+  Dim lNewCheckBoxLinkedCell As String
+  Dim lShowCheckedOnlyInitialState As Integer
+
+  Application.ScreenUpdating = False
     
-    lString = ActiveSheet.Shapes(Application.Caller).TopLeftCell.Address
+  ' Reset protection
+  protect_wb_and_ws
     
-    Range(lString).EntireColumn.Select
+  ActiveSheet.UsedRange
+
+  ' Unhide rows, the procedure wont work if cell rows are hidden
+  ' First, check if rows are hidden, and keep track of state
+  
+  lShowCheckedOnlyInitialState = _
+    ActiveSheet.GroupObjects("OptionButtonsShowAllVsSelected").ShapeRange.GroupItems("optnBtnShowCheckedOnly").ControlFormat.Value
     
-    Application.CutCopyMode = False
-    
-    Selection.Copy
-    
-    Selection.Insert Shift:=xlToRight
-    ActiveCell.Offset(1, 1).Select
-    
-    Application.CutCopyMode = False
-    
-    ActiveSheet.UsedRange
-    
+  If Not lShowCheckedOnlyInitialState = xlOff Then
+    unhideAllRowsAndFormControls
+  End If
+  
+  Application.ScreenUpdating = False
+
+  ' Insert new column to the right and copy all cell values and properties _
+    from old column, except shape objects ("Kopier..."-button and checboxes)
+
+  Set lCopyButton = ActiveSheet.Shapes(Application.Caller)
+  Set lFromCol = lCopyButton.TopLeftCell.EntireColumn
+
+  lFromCol.Offset(0, 1).EntireColumn.Select
+
+  Application.CutCopyMode = False
+
+  Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+
+  lFromCol.Select
+
+  Selection.Copy
+
+  lFromCol.Offset(0, 1).EntireColumn.Select
+
+  Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+
+  Selection.PasteSpecial Paste:=xlPasteValuesAndNumberFormats, Operation:= _
+      xlNone, SkipBlanks:=False, Transpose:=False
+
+  Application.CutCopyMode = False
+
+  ' Insert check boxes
+  lFromColNo = lFromCol.Column
+
+  lNewColNo = lFromColNo + 1
+
+  For Each lFromCheckBox In ActiveSheet.CheckBoxes
+
+    If Range(lFromCheckBox.LinkedCell).Column = lFromColNo Then
+
+     lNewCheckBoxLinkedCell = Range(lFromCheckBox.LinkedCell).Offset(0, 1).Address
+
+     createCheckbox (ActiveSheet.Range(lNewCheckBoxLinkedCell))
+
+    End If
+
+  Next lFromCheckBox
+
+  ' Move "Kopier..."-button
+  lCopyButton.Left = lCopyButton.Left + lFromCol.Width
+
+  ActiveSheet.UsedRange
+
+  If lShowCheckedOnlyInitialState = xlOn Then
+    hideUncheckedAnalyses
+  End If
+  
+  lCopyButton.TopLeftCell.Select
+  
+  Application.ScreenUpdating = True
+
 End Sub
 
 
 Private Sub NewRow(inCellContainingValidation As Range)
     
-    Dim lShape As Shape
-    Dim lRow As Integer
-    Dim lNewRow As Integer
-    Dim lColumn As Integer
-    Dim lNewColumn As Integer
-    Dim lCellHeight As Integer
-    Dim lCellTop As Integer
-    Dim lNewDataCell As Range
-    
-    'Find position of button pressed and destination cells
-    Set lShape = ActiveSheet.Shapes(Application.Caller)
-    lRow = lShape.TopLeftCell.Row
-    lNewRow = lRow + 1
-    lColumn = lShape.TopLeftCell.Column
-    lNewColumn = lColumn - 1
-    
-    'Insert new row
-    Rows(lNewRow).Select
-    Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-    
-    Set lNewDataCell = Cells(lNewRow, lNewColumn)
-    lCellHeight = lNewDataCell.Height
-    lCellTop = lNewDataCell.Top
-    lShape.Height = lCellHeight * 0.9
-    lShape.Top = lNewDataCell.Top + 0.05 * lCellHeight
-    
-    'Copy Data Validation from DataValidations sheet
-    inCellContainingValidation.Copy
-    
-    lNewDataCell.Select
-    
-    Selection.PasteSpecial Paste:=xlPasteValidation
-    
-    ActiveSheet.UsedRange
-End Sub
+  Dim lshape As Shape
+  Dim lRow As Integer
+  Dim lNewRow As Integer
+  Dim lColumn As Integer
+  Dim lNewColumn As Integer
+  Dim lCellHeight As Integer
+  Dim lCellTop As Integer
+  Dim lNewDataCell As Range
 
-
-Sub NewStationRow()
-    Dim lCellCopyValidation As Range
+  Application.ScreenUpdating = False
     
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Stasjonskode og navn").Offset(columnoffset:=1)
-
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewDate()
-    Dim lCellCopyValidation As Range
+  ' Reset protection
+  protect_wb_and_ws
     
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdato").Offset(columnoffset:=1)
-
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewDepth()
-    Dim lCellCopyValidation As Range
+  ActiveSheet.UsedRange
     
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdyp").Offset(columnoffset:=1)
+  'Find position of button pressed and destination cells
+  Set lshape = ActiveSheet.Shapes(Application.Caller)
+  lRow = lshape.TopLeftCell.Row
+  lNewRow = lRow + 1
+  lColumn = lshape.TopLeftCell.Column
+  lNewColumn = lColumn - 1
+  
+  'Insert new row
+  Rows(lNewRow).Select
+  Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+  
+  Set lNewDataCell = Cells(lNewRow, lNewColumn)
+  lCellHeight = lNewDataCell.Height
+  lCellTop = lNewDataCell.Top
+  lshape.Height = lCellHeight * 0.9
+  lshape.Top = lNewDataCell.Top + 0.05 * lCellHeight
+  
+  'Copy Data Validation from DataValidations sheet
+  inCellContainingValidation.Copy
+  
+  lNewDataCell.Select
+  
+  Selection.PasteSpecial Paste:=xlPasteValidation
 
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewCore()
-    Dim lCellCopyValidation As Range
-    
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Kjerneidentifikasjon/grabb").Offset(columnoffset:=1)
-
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewSlice()
-    Dim lCellCopyValidation As Range
-    
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Snitt").Offset(columnoffset:=1)
-
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewSpecimen()
-    Dim lCellCopyValidation As Range
-    
-    Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Individnummer/prøvenr").Offset(columnoffset:=1)
-
-    Call NewRow(lCellCopyValidation)
-End Sub
-
-
-Sub NewAnalys()
-    Dim lShape As Shape
-    Dim lRow As Integer
-    Dim lNewRow As Integer
-    Dim lCellHeight As Integer
-    Dim lCellTop As Integer
-    Dim lNewDataCell As Range
-    Dim lCheckboxLeft As Integer
-    Dim lCheckboxTop As Integer
-    Dim lCheckboxWidth As Integer
-    Dim lCheckboxHeight As Integer
-    Dim lColumn As Integer
-    Dim lNewColumn As Integer
-    
-    'Empty clipboard
-    Application.CutCopyMode = False
-    
-    'Find position of button pressed and destination cells
-    Set lShape = ActiveSheet.Shapes(Application.Caller)
-    lRow = lShape.TopLeftCell.Row
-    lNewRow = lRow + 1
-    lColumn = lShape.TopLeftCell.Column
-    lNewColumn = lColumn - 1
-    
-    'Insert new empty row
-    Rows(lNewRow).Select
-    Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-    
-    Set lNewDataCell = Cells(lNewRow, lNewColumn)
-    
-    'Copy validation to new row from row above
-    Range(Cells(lRow, 1), Cells(lRow, lNewColumn)).Copy
-    Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
-    Selection.PasteSpecial Paste:=xlPasteValidation, Operation:=xlNone, _
-        SkipBlanks:=False, Transpose:=False
-    
-    'Copy format to new row from row above
-    Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
-    Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
-        SkipBlanks:=False, Transpose:=False
-    
-    Application.CutCopyMode = False
-           
-    ' Insert check boxes for entire new row
-    createCheckBoxes Range(Cells(lNewRow, 2), Cells(lNewRow, lNewColumn))
-    
-    ' Move New Analysis button down
-    lCellHeight = lNewDataCell.Height
-    lShape.Height = lCellHeight * 0.9
-    lShape.Top = lNewDataCell.Top + 0.05 * lCellHeight
-    
-    lNewDataCell.Select
-    
-    Application.CutCopyMode = False
-    ActiveSheet.UsedRange
+  Application.ScreenUpdating = True
   
 End Sub
 
 
-Private Sub createCheckbox(inCell As Range)
-    ' Create check-box in cell and check it
-    ' Used when creating new row in anaylses sheets
-    
-    Dim lShape As Shape
-    Dim lRow As Integer
-    Dim lNewRow As Integer
-    Dim lCellHeight As Integer
-    Dim lCellTop As Integer
-    Dim lCheckboxLeft As Integer
-    Dim lCheckboxTop As Integer
-    Dim lCheckboxWidth As Integer
-    Dim lCheckboxHeight As Integer
+Sub NewStationRow()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Stasjonskode og navn").Offset(columnoffset:=1)
 
-    lCellHeight = inCell.Height
-    lCellTop = inCell.Top
-    lCheckboxWidth = 24
-    lCheckboxLeft = inCell.Left + (inCell.Offset.Width - lCheckboxWidth) / 2
-    lCheckboxHeight = 20
-    lCheckboxTop = inCell.Top + (inCell.Height - lCheckboxHeight) / 2
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewDate()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdato").Offset(columnoffset:=1)
+
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewDepth()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Prøvetakingsdyp").Offset(columnoffset:=1)
+
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewCore()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Kjerneidentifikasjon/grabb").Offset(columnoffset:=1)
+
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewSlice()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Snitt").Offset(columnoffset:=1)
+
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewSpecimen()
+  Dim lCellCopyValidation As Range
+  
+  Set lCellCopyValidation = findCell(Worksheets("DataValidations"), "Individnummer/prøvenr").Offset(columnoffset:=1)
+
+  Call NewRow(lCellCopyValidation)
+End Sub
+
+
+Sub NewAnalysRow()
+  Dim lshape As Shape
+  Dim lRow As Integer
+  Dim lNewRow As Integer
+  Dim lCellHeight As Integer
+  Dim lNewDataCell As Range
+  Dim lColumn As Integer
+  Dim lNewColumn As Integer
     
-    ' Check if checkbox already exists
-    If Not isChecked(inCell.Worksheet, inCell.Row, inCell.Column) = vbEmpty Then
-        Exit Sub
+  Application.ScreenUpdating = False
+    
+  ' Reset protection
+  protect_wb_and_ws
+    
+  ActiveSheet.UsedRange
+
+  'Empty clipboard
+  Application.CutCopyMode = False
+  
+  'Find position of button pressed and destination cells
+  Set lshape = ActiveSheet.Shapes(Application.Caller)
+  lRow = lshape.TopLeftCell.Row
+  lNewRow = lRow + 1
+  lColumn = lshape.TopLeftCell.Column
+  lNewColumn = lColumn - 1
+  
+  'Insert new empty row
+  Rows(lNewRow).Select
+  Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+  
+  Set lNewDataCell = Cells(lNewRow, lNewColumn)
+  
+  'Copy validation to new row from row above
+  Application.CutCopyMode = False
+  
+  Range(Cells(lRow, 1), Cells(lRow, lNewColumn)).Copy
+  Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
+  Selection.PasteSpecial Paste:=xlPasteValidation, Operation:=xlNone, _
+      SkipBlanks:=False, Transpose:=False
+  
+  'Copy format to new row from row above
+  Range(Cells(lNewRow, 1), Cells(lNewRow, lNewColumn)).Select
+  Selection.PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+      SkipBlanks:=False, Transpose:=False
+      
+   Application.CutCopyMode = False
+         
+  ' Insert check boxes for entire new row
+  createCheckBoxes Range(Cells(lNewRow, 2), Cells(lNewRow, lNewColumn))
+  
+  ' Set new datacell = true - checkbox will be cheked
+  lNewDataCell = True
+  
+  ' Move New Analysis button down
+  lCellHeight = lNewDataCell.Height
+  lshape.Height = lCellHeight * 0.9
+  lshape.Top = lNewDataCell.Top + 0.05 * lCellHeight
+  
+  ActiveSheet.Cells(lNewDataCell.Row, 1).Select
+  
+  Application.CutCopyMode = False
+  
+  ActiveSheet.UsedRange
+  
+  Application.ScreenUpdating = True
+    
+End Sub
+
+
+Private Sub createCheckbox(inCell As Range)
+  ' Create check-box in cell and check it
+  ' Used when creating new row in anaylses sheets
+  
+  Dim lcheckbox As CheckBox
+  Const cCheckboxSize As Double = 12.75
+  Const cTopOffset = 1.5
+  
+  ' Check if checkbox already exists
+  If linkedCheckBoxExists(inCell.Worksheet, inCell.Address) = True Then
+     
+    Exit Sub
+  
+  End If
+  
+  ' Create check box
+  Set lcheckbox = inCell.Worksheet.CheckBoxes.Add( _
+  Top:=inCell.Top + cTopOffset, Left:=inCell.Left, _
+  Height:=cCheckboxSize, Width:=cCheckboxSize)
+
+  With lcheckbox
+    
+    If inCell.Height = 0 Then
+      .Visible = False
     End If
     
-    ' Create check box
-    ActiveSheet.CheckBoxes.Add(lCheckboxLeft, lCheckboxTop, lCheckboxWidth, lCheckboxHeight).Select
+    .Height = cCheckboxSize
+    .Width = cCheckboxSize
+    .Value = inCell.Value
+    .LinkedCell = inCell.Address
+    .Caption = ""
+    .Top = inCell.Top + cTopOffset
+    .Left = inCell.Left + (inCell.Width - .Width) / 2
     
-    Selection.Characters.Text = ""
+  End With
     
-    ' Precheck chekbox
-    Selection.Value = True
 End Sub
 
 
 Private Sub createCheckBoxes(inRow As Range)
-    ' Used when creating new row in anaylses sheets
-    Dim lCurrentCell As Range
-    
-    For Each lCurrentCell In inRow
-        createCheckbox lCurrentCell
-    Next
+  ' Used when creating new row in anaylses sheets
+  Dim lCurrCell As Range
+  
+  For Each lCurrCell In inRow
+      createCheckbox lCurrCell
+  Next
 
 End Sub
 
 
-Sub resetProtection()
-    ' Procedure for resetting protection
-    ' Protection is reset for Worksheets and Workbook structure
-    ' It can sometimes be necessary to set the right protection level, because it seems like
-    ' "UserInterfaceOnly:=True" will not persist after reopening the worksheet (property
-    '   activesheet.protectionMode = True)
-    
-    Dim lCurrentWorksheet As Worksheet
-    
-    If ActiveWorkbook.ProtectStructure <> True Then
-        ActiveWorkbook.Protect Password:="encrypted"
-    End If
-    
-    For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
-    
-        If lCurrentWorksheet.ProtectionMode = False Then
-            lCurrentWorksheet.Protect Password:="encrypted", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
-        End If
-        
-        If lCurrentWorksheet.EnableSelection <> xlNoRestrictions Then
-            lCurrentWorksheet.EnableSelection = xlNoRestrictions
-        End If
-    
-    Next lCurrentWorksheet
+Sub protect_wb_and_ws()
+  ' Activate or reset protection of workbook and worksheets
+  ' The setting UserInterfaceOnly:=True seems not to persist after reopening workbook,
+  ' therefore it should be reset before any manipulating of worksheet with vba
+  
+  Dim lCurrentWorksheet As Worksheet
+
+  ActiveWorkbook.Protect "encrypted"
+  
+  For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
+
+    lCurrentWorksheet.Protect "encrypted", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
+
+    lCurrentWorksheet.EnableSelection = xlNoRestrictions
+
+  Next lCurrentWorksheet
+
+  ActiveWorkbook.Protect "encrypted"
     
 End Sub
 
+
+Sub unprotect_wb_and_ws()
+    
+  ' Remove all protection of workbook and worksheet
+  ' Used before maiplualting worksheets in gui
+    
+  Dim lCurrentWorksheet As Worksheet
+  
+  For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
+  
+    lCurrentWorksheet.Unprotect "encrypted"
+      
+  Next lCurrentWorksheet
+  
+  ActiveWorkbook.Unprotect "encrypted"
+    
+End Sub

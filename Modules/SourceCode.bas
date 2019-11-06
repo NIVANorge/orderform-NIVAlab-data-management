@@ -30,15 +30,15 @@ End Function
 Private Function CreateModules()
     Dim modules As New Collection
     For Each component In ThisWorkbook.VBProject.VBComponents
-        'If Not (component.name = "SourceCode" Or Left(component.name, 9) = "Installer") Then
-            If component.Type = 1 Then
-                modules.Add CreateModule(component.name)
-            ElseIf component.Type = 2 Then
-                modules.Add CreateClassModule(component.name)
-            ElseIf component.Type = 100 Then
-                modules.Add CreateWorksheetModule(component.name)
-            End If
-       ' End If
+        
+        If component.Type = 1 Then
+            modules.Add CreateModule(component.name)
+        ElseIf component.Type = 2 Then
+            modules.Add CreateClassModule(component.name)
+        ElseIf component.Type = 100 Then
+            modules.Add CreateWorksheetModule(component.name)
+        End If
+       
     Next
     Set CreateModules = modules
 End Function

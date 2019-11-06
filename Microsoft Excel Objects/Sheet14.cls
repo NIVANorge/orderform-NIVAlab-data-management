@@ -10,6 +10,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Private Sub Worksheet_Activate()
-  resetProtection
+  Application.ScreenUpdating = True
+  protect_wb_and_ws
+  Application.ScreenUpdating = False
 End Sub
-
