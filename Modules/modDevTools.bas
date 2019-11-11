@@ -64,7 +64,7 @@ Private Sub resizeAlignButtons()
 
 End Sub
 
-Sub repopulateAnalysCheckboxesActiveSheet()
+Private Sub repopulateAnalysCheckboxesActiveSheet()
   Application.ScreenUpdating = False
 
   repopulateAnalysCheckboxes ActiveSheet
@@ -129,7 +129,7 @@ Private Sub DeleteOptnBtnGrp()
 End Sub
     
     
-Sub ReCreateOptnBtnGrp()
+Private Sub ReCreateOptnBtnGrp()
 
     Dim lCell As Range
     Dim lGroup As Object
@@ -284,14 +284,12 @@ Private Sub repopulateDatatypeCheckboxes(inSheet As Worksheet)
 End Sub
 
 
-
-
-Sub center()
+Private Sub center()
   centerCheckBoxes
 End Sub
 
 
-Sub centerCheckBoxes(Optional inSheet As Worksheet)
+Private Sub centerCheckBoxes(Optional inSheet As Worksheet)
 
     Dim lCurrCell As Range
     Dim lCurrCheckBox As CheckBox

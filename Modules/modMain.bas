@@ -491,8 +491,8 @@ Sub protect_wb_and_ws()
   ' therefore it should be reset before any manipulating of worksheet with vba
   
   Dim lCurrentWorksheet As Worksheet
-
-  ActiveWorkbook.Protect "encrypted"
+  
+  ActiveWorkbook.Protect Password:="encrypted", Structure:=True, Windows:=False
   
   For Each lCurrentWorksheet In ActiveWorkbook.Worksheets
 
@@ -501,8 +501,6 @@ Sub protect_wb_and_ws()
     lCurrentWorksheet.EnableSelection = xlNoRestrictions
 
   Next lCurrentWorksheet
-
-  ActiveWorkbook.Protect "encrypted"
     
 End Sub
 

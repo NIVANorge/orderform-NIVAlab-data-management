@@ -7,10 +7,3 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Option Explicit
-
-Private Sub Worksheet_Activate()
-  Application.ScreenUpdating = True
-  protect_wb_and_ws
-  Application.ScreenUpdating = False
-End Sub
